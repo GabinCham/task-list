@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/components/AuthScreen';
@@ -8,6 +8,7 @@ import { MeshGlow } from './src/components/MeshGlow';
 import { TabRoute } from './src/components/TabRoute';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ListsProvider, useLists } from './src/context/ListsContext';
+import { refreshWebBuildIfNeeded } from './src/lib/webBuildRefresh';
 import { colors } from './src/theme/colors';
 import { fonts, useAppFonts } from './src/theme/fonts';
 import {
@@ -94,6 +95,10 @@ function AppNavigator() {
 
 export default function App() {
   const fontsLoaded = useAppFonts();
+
+  useEffect(() => {
+    void refreshWebBuildIfNeeded();
+  }, []);
 
   if (!fontsLoaded) {
     return (
