@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Pressable,
   ScrollView,
@@ -19,20 +19,31 @@ type Props = {
   onAddTab: () => void;
 };
 
+type TabPos = { x: number; width: number };
+
 export function CustomTabBar({ tabs, activeTabId, onSelect, onAddTab }: Props) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
-  const positions = useRef<Record<string, { x: number; width: number }>>({});
+  const positions = useRef<Record<string, TabPos>>({});
+  const [layoutTick, setLayoutTick] = useState(0);
 
   useEffect(() => {
-    const item = positions.current[activeTabId];
-    if (!item) return;
-    const peek = 56;
+    const index = tabs.findIndex((tab) => tab.id === activeTabId);
+    if (index < 0) return;
+
+    if (index === 0) {
+      scrollRef.current?.scrollTo({ x: 0, animated: true });
+      return;
+    }
+
+    const previous = positions.current[tabs[index - 1].id];
+    if (!previous) return;
+
     scrollRef.current?.scrollTo({
-      x: Math.max(0, item.x - peek),
+      x: Math.max(0, previous.x),
       animated: true,
     });
-  }, [activeTabId, tabs]);
+  }, [activeTabId, layoutTick, tabs]);
 
   return (
     <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
@@ -49,9 +60,13 @@ export function CustomTabBar({ tabs, activeTabId, onSelect, onAddTab }: Props) {
             <Pressable
               key={tab.id}
               onPress={() => onSelect(tab.id)}
+              hitSlop={8}
               onLayout={(event) => {
                 const { x, width } = event.nativeEvent.layout;
+                const current = positions.current[tab.id];
+                if (current?.x === x && current.width === width) return;
                 positions.current[tab.id] = { x, width };
+                setLayoutTick((tick) => tick + 1);
               }}
               style={[
                 styles.item,
@@ -111,8 +126,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   item: {
-    minWidth: 68,
+    minWidth: 72,
     maxWidth: 108,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 10,
