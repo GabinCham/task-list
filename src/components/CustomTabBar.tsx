@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Text,
   View,
-  type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, withAlpha } from '../theme/colors';
@@ -52,9 +51,7 @@ export function CustomTabBar({ tabs, activeTabId, onSelect, onAddTab }: Props) {
       style={[
         styles.bar,
         Platform.OS === 'web'
-          ? ({
-              paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
-            } as unknown as ViewStyle)
+          ? styles.barWeb
           : { paddingBottom: Math.max(insets.bottom, 10) },
       ]}
     >
@@ -126,6 +123,9 @@ const styles = StyleSheet.create({
     paddingRight: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,
+  },
+  barWeb: {
+    paddingBottom: 6,
   },
   scroller: {
     flex: 1,

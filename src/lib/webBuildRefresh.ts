@@ -1,6 +1,6 @@
 import { Platform } from 'react-native';
 
-const STORAGE_KEY = '@listes/web-build-id';
+const STORAGE_KEY = '@listes/web-build-id-v3';
 
 function versionUrl(): string {
   const base = (process.env.EXPO_PUBLIC_BASE_URL || '').replace(/\/$/, '');
