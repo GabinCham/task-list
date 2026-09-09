@@ -1,11 +1,35 @@
 import { useCallback, useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import {
+  applyDailyRollover,
   createDefaultData,
+  createTab,
   createTodoId,
   loadAppData,
+  nextTabColor,
   saveAppData,
 } from '../storage/listsStorage';
-import type { AppData, TabIconName, Todo } from '../types';
+import type { AppData, LeftoverDay, TabIconName, TabList, Todo } from '../types';
+import { msUntilNextMidnight } from '../utils/dates';
+
+function mapTab(data: AppData, tabId: string, mapper: (tab: TabList) => TabList): AppData {
+  return {
+    ...data,
+    tabs: data.tabs.map((tab) => (tab.id === tabId ? mapper(tab) : tab)),
+  };
+}
+
+function mapLeftoverDay(
+  days: LeftoverDay[],
+  date: string,
+  mapper: (todos: Todo[]) => Todo[],
+): LeftoverDay[] {
+  return days
+    .map((day) =>
+      day.date === date ? { ...day, todos: mapper(day.todos) } : day,
+    )
+    .filter((day) => day.todos.length > 0);
+}
 
 export function useListsStore() {
   const [data, setData] = useState<AppData | null>(null);
@@ -37,47 +61,64 @@ export function useListsStore() {
     };
   }, []);
 
-  const persist = useCallback(async (next: AppData) => {
-    setData(next);
-    try {
-      await saveAppData(next);
-      setError(null);
-    } catch {
-      setError('Impossible d’enregistrer les modifications.');
-    }
+  const persist = useCallback((updater: (prev: AppData) => AppData) => {
+    setData((prev) => {
+      if (!prev) return prev;
+      const next = updater(prev);
+      void (async () => {
+        try {
+          await saveAppData(next);
+          setError(null);
+        } catch {
+          setError('Impossible d’enregistrer les modifications.');
+        }
+      })();
+      return next;
+    });
   }, []);
 
+  useEffect(() => {
+    if (!data) return;
+
+    const runRollover = () => persist((prev) => applyDailyRollover(prev));
+
+    const timeoutId = setTimeout(runRollover, msUntilNextMidnight());
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') runRollover();
+    });
+
+    return () => {
+      clearTimeout(timeoutId);
+      subscription.remove();
+    };
+  }, [data?.lastRolloverDate, persist]);
+
   const updateTab = useCallback(
-    (tabId: string, updates: { name?: string; icon?: TabIconName }) => {
-      if (!data) return;
-      const tabs = data.tabs.map((tab) =>
-        tab.id === tabId ? { ...tab, ...updates } : tab,
-      ) as AppData['tabs'];
-      void persist({ tabs });
+    (
+      tabId: string,
+      updates: { name?: string; icon?: TabIconName; color?: string },
+    ) => {
+      persist((prev) => mapTab(prev, tabId, (tab) => ({ ...tab, ...updates })));
     },
-    [data, persist],
+    [persist],
   );
 
   const updateSectionTitle = useCallback(
     (tabId: string, sectionId: string, title: string) => {
-      if (!data) return;
-      const tabs = data.tabs.map((tab) => {
-        if (tab.id !== tabId) return tab;
-        return {
+      persist((prev) =>
+        mapTab(prev, tabId, (tab) => ({
           ...tab,
           sections: tab.sections.map((section) =>
             section.id === sectionId ? { ...section, title } : section,
-          ) as AppData['tabs'][number]['sections'],
-        };
-      }) as AppData['tabs'];
-      void persist({ tabs });
+          ) as TabList['sections'],
+        })),
+      );
     },
-    [data, persist],
+    [persist],
   );
 
   const addTodo = useCallback(
     (tabId: string, sectionId: string, text: string) => {
-      if (!data) return;
       const trimmed = text.trim();
       if (!trimmed) return;
 
@@ -88,73 +129,160 @@ export function useListsStore() {
         createdAt: Date.now(),
       };
 
-      const tabs = data.tabs.map((tab) => {
-        if (tab.id !== tabId) return tab;
-        return {
+      persist((prev) =>
+        mapTab(prev, tabId, (tab) => ({
           ...tab,
           sections: tab.sections.map((section) =>
             section.id === sectionId
               ? { ...section, todos: [todo, ...section.todos] }
               : section,
-          ) as AppData['tabs'][number]['sections'],
-        };
-      }) as AppData['tabs'];
-      void persist({ tabs });
+          ) as TabList['sections'],
+        })),
+      );
     },
-    [data, persist],
+    [persist],
   );
 
   const toggleTodo = useCallback(
     (tabId: string, sectionId: string, todoId: string) => {
-      if (!data) return;
-      const tabs = data.tabs.map((tab) => {
-        if (tab.id !== tabId) return tab;
-        return {
+      persist((prev) =>
+        mapTab(prev, tabId, (tab) => ({
           ...tab,
           sections: tab.sections.map((section) =>
             section.id === sectionId
               ? {
                   ...section,
-                  todos: section.todos.map((todo) =>
-                    todo.id === todoId
-                      ? { ...todo, completed: !todo.completed }
-                      : todo,
+                  todos: section.todos.map((item) =>
+                    item.id === todoId
+                      ? { ...item, completed: !item.completed }
+                      : item,
                   ),
                 }
               : section,
-          ) as AppData['tabs'][number]['sections'],
-        };
-      }) as AppData['tabs'];
-      void persist({ tabs });
+          ) as TabList['sections'],
+        })),
+      );
     },
-    [data, persist],
+    [persist],
   );
 
   const deleteTodo = useCallback(
     (tabId: string, sectionId: string, todoId: string) => {
-      if (!data) return;
-      const tabs = data.tabs.map((tab) => {
-        if (tab.id !== tabId) return tab;
-        return {
+      persist((prev) =>
+        mapTab(prev, tabId, (tab) => ({
           ...tab,
           sections: tab.sections.map((section) =>
             section.id === sectionId
               ? {
                   ...section,
-                  todos: section.todos.filter((todo) => todo.id !== todoId),
+                  todos: section.todos.filter((item) => item.id !== todoId),
                 }
               : section,
-          ) as AppData['tabs'][number]['sections'],
-        };
-      }) as AppData['tabs'];
-      void persist({ tabs });
+          ) as TabList['sections'],
+        })),
+      );
     },
-    [data, persist],
+    [persist],
   );
 
-  const resetAll = useCallback(async () => {
-    const defaults = createDefaultData();
-    await persist(defaults);
+  const addTodayTodo = useCallback(
+    (text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      const todo: Todo = {
+        id: createTodoId(),
+        text: trimmed,
+        completed: false,
+        createdAt: Date.now(),
+      };
+      persist((prev) => ({
+        ...prev,
+        todayTodos: [todo, ...prev.todayTodos],
+      }));
+    },
+    [persist],
+  );
+
+  const toggleTodayTodo = useCallback(
+    (todoId: string) => {
+      persist((prev) => ({
+        ...prev,
+        todayTodos: prev.todayTodos.map((item) =>
+          item.id === todoId ? { ...item, completed: !item.completed } : item,
+        ),
+      }));
+    },
+    [persist],
+  );
+
+  const deleteTodayTodo = useCallback(
+    (todoId: string) => {
+      persist((prev) => ({
+        ...prev,
+        todayTodos: prev.todayTodos.filter((item) => item.id !== todoId),
+      }));
+    },
+    [persist],
+  );
+
+  const toggleLeftoverTodo = useCallback(
+    (date: string, todoId: string) => {
+      persist((prev) => ({
+        ...prev,
+        leftoverDays: mapLeftoverDay(prev.leftoverDays, date, (todos) =>
+          todos.map((item) =>
+            item.id === todoId ? { ...item, completed: !item.completed } : item,
+          ),
+        ),
+      }));
+    },
+    [persist],
+  );
+
+  const deleteLeftoverTodo = useCallback(
+    (date: string, todoId: string) => {
+      persist((prev) => ({
+        ...prev,
+        leftoverDays: mapLeftoverDay(prev.leftoverDays, date, (todos) =>
+          todos.filter((item) => item.id !== todoId),
+        ),
+      }));
+    },
+    [persist],
+  );
+
+  const addTab = useCallback((): string => {
+    const tab = createTab({
+      name: 'Liste',
+      icon: 'list',
+      color: '#FF8C42',
+    });
+    persist((prev) => ({
+      ...prev,
+      tabs: [
+        ...prev.tabs,
+        {
+          ...tab,
+          name: `Liste ${prev.tabs.length + 1}`,
+          color: nextTabColor(prev.tabs.map((item) => item.color)),
+        },
+      ],
+    }));
+    return tab.id;
+  }, [persist]);
+
+  const deleteTab = useCallback(
+    (tabId: string) => {
+      persist((prev) => {
+        if (prev.tabs.length <= 1) return prev;
+        return { ...prev, tabs: prev.tabs.filter((tab) => tab.id !== tabId) };
+      });
+    },
+    [persist],
+  );
+
+  const resetAll = useCallback(() => {
+    persist(() => createDefaultData());
   }, [persist]);
 
   return {
@@ -166,6 +294,13 @@ export function useListsStore() {
     addTodo,
     toggleTodo,
     deleteTodo,
+    addTodayTodo,
+    toggleTodayTodo,
+    deleteTodayTodo,
+    toggleLeftoverTodo,
+    deleteLeftoverTodo,
+    addTab,
+    deleteTab,
     resetAll,
   };
 }

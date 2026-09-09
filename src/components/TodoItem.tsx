@@ -4,16 +4,28 @@ import type { Todo } from '../types';
 
 type Props = {
   todo: Todo;
+  accent: string;
+  showDivider: boolean;
   onToggle: () => void;
   onDelete: () => void;
 };
 
-export function TodoItem({ todo, onToggle, onDelete }: Props) {
+export function TodoItem({
+  todo,
+  accent,
+  showDivider,
+  onToggle,
+  onDelete,
+}: Props) {
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, showDivider && styles.divider]}>
       <Pressable
         onPress={onToggle}
-        style={[styles.check, todo.completed && styles.checkDone]}
+        style={[
+          styles.check,
+          { borderColor: todo.completed ? accent : colors.checkIdle },
+          todo.completed && { backgroundColor: accent },
+        ]}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: todo.completed }}
         hitSlop={8}
@@ -38,43 +50,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
+  },
+  divider: {
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   check: {
-    width: 24,
-    height: 24,
-    borderRadius: 7,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1.5,
-    borderColor: colors.accent,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.white,
-  },
-  checkDone: {
-    backgroundColor: colors.accent,
+    backgroundColor: 'transparent',
   },
   checkMark: {
     color: colors.white,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
     marginTop: -1,
   },
   text: {
     flex: 1,
-    color: colors.ink,
+    color: colors.white,
     fontSize: 16,
     lineHeight: 22,
+    fontWeight: '500',
   },
   textDone: {
     color: colors.completed,
     textDecorationLine: 'line-through',
   },
   delete: {
-    color: colors.danger,
-    fontSize: 26,
-    lineHeight: 26,
+    color: colors.inkMuted,
+    fontSize: 20,
+    lineHeight: 20,
     paddingHorizontal: 4,
   },
 });
