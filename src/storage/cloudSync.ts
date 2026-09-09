@@ -68,8 +68,54 @@ export async function fetchCloudSnapshot(userId: string): Promise<CloudSnapshot 
   return snapshotFromRow(data);
 }
 
-export async function pushCloudData(userId: string, appData: AppData): Promise<string | null> {
+export function countTodos(data: AppData): number {
+  const today = data.todayTodos.length;
+  const leftover = data.leftoverDays.reduce((sum, day) => sum + day.todos.length, 0);
+  const tabs = data.tabs.reduce(
+    (sum, tab) =>
+      sum + tab.sections.reduce((inner, section) => inner + section.todos.length, 0),
+    0,
+  );
+  return today + leftover + tabs;
+}
+
+export async function seedCloudData(userId: string, appData: AppData): Promise<CloudSnapshot | null> {
   if (!supabase) return null;
+
+  const { data, error } = await supabase
+    .from('list_states')
+    .insert({
+      user_id: userId,
+      data: appData,
+      updated_at: new Date().toISOString(),
+    })
+    .select('data, updated_at')
+    .single();
+
+  if (!error) return snapshotFromRow(data);
+
+  const duplicate =
+    error.code === '23505' ||
+    error.code === '409' ||
+    /duplicate|already exists|unique/i.test(error.message);
+  if (!duplicate) throw error;
+
+  return fetchCloudSnapshot(userId);
+}
+
+export async function pushCloudData(
+  userId: string,
+  appData: AppData,
+  options?: { force?: boolean },
+): Promise<{ updatedAt: string | null; replacedWith?: CloudSnapshot }> {
+  if (!supabase) return { updatedAt: null };
+
+  if (!options?.force) {
+    const remote = await fetchCloudSnapshot(userId);
+    if (remote && countTodos(appData) < countTodos(remote.data)) {
+      return { updatedAt: remote.updatedAt, replacedWith: remote };
+    }
+  }
 
   const { data, error } = await supabase
     .from('list_states')
@@ -85,7 +131,7 @@ export async function pushCloudData(userId: string, appData: AppData): Promise<s
     .single();
 
   if (error) throw error;
-  return data?.updated_at ?? null;
+  return { updatedAt: data?.updated_at ?? null };
 }
 
 export function subscribeListStates(

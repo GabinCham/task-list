@@ -5,6 +5,7 @@ import {
   fetchCloudSnapshot,
   isRemoteNewer,
   pushCloudData,
+  seedCloudData,
   subscribeListStates,
   waitForSession,
   type CloudSnapshot,
@@ -47,6 +48,7 @@ export function useListsStore(userId: string) {
   const cloudTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCloud = useRef<AppData | null>(null);
   const lastPushedAt = useRef<string | null>(null);
+  const forceCloudWrite = useRef(false);
 
   const applySnapshot = useCallback(
     (snapshot: CloudSnapshot, source: 'boot' | 'resume' | 'live') => {
@@ -87,9 +89,15 @@ export function useListsStore(userId: string) {
           const next = local ?? createDefaultData();
           await saveAppData(next, userId);
           if (!mounted) return;
-          const pushedAt = await pushCloudData(userId, next);
+          const seeded = await seedCloudData(userId, next);
           if (!mounted) return;
-          lastPushedAt.current = pushedAt;
+          if (seeded) {
+            lastPushedAt.current = seeded.updatedAt;
+            await saveAppData(seeded.data, userId);
+            setData(seeded.data);
+            return;
+          }
+          lastPushedAt.current = null;
           setData(next);
         } catch (cloudError) {
           if (!mounted) return;
@@ -129,9 +137,14 @@ export function useListsStore(userId: string) {
         cloudTimer.current = setTimeout(() => {
           const snapshot = pendingCloud.current;
           if (!snapshot) return;
-          void pushCloudData(userId, snapshot)
-            .then((pushedAt) => {
-              if (pushedAt) lastPushedAt.current = pushedAt;
+          void pushCloudData(userId, snapshot, { force: forceCloudWrite.current })
+            .then((result) => {
+              forceCloudWrite.current = false;
+              if (result.replacedWith) {
+                applySnapshot(result.replacedWith, 'resume');
+                return;
+              }
+              if (result.updatedAt) lastPushedAt.current = result.updatedAt;
             })
             .catch((cloudError) => {
               setError(describeCloudError(cloudError));
@@ -380,6 +393,7 @@ export function useListsStore(userId: string) {
   );
 
   const resetAll = useCallback(() => {
+    forceCloudWrite.current = true;
     persist(() => createDefaultData());
   }, [persist]);
 
