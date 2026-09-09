@@ -33,6 +33,28 @@ function snapshotFromRow(row: { data?: unknown; updated_at?: string } | null): C
   return { data, updatedAt: row.updated_at };
 }
 
+export async function waitForSession(): Promise<boolean> {
+  const client = supabase;
+  if (!client) return false;
+
+  const current = await client.auth.getSession();
+  if (current.data.session) return true;
+
+  return new Promise((resolve) => {
+    const { data: listener } = client.auth.onAuthStateChange((_event, session) => {
+      if (!session) return;
+      listener.subscription.unsubscribe();
+      resolve(true);
+    });
+    setTimeout(() => {
+      listener.subscription.unsubscribe();
+      void client.auth.getSession().then(({ data }) => {
+        resolve(Boolean(data.session));
+      });
+    }, 2500);
+  });
+}
+
 export async function fetchCloudSnapshot(userId: string): Promise<CloudSnapshot | null> {
   if (!supabase) return null;
 

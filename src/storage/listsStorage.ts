@@ -213,7 +213,7 @@ export function parseAppData(parsed: unknown): AppData | null {
   });
 }
 
-export async function loadAppData(userId?: string): Promise<AppData> {
+export async function loadExistingAppData(userId?: string): Promise<AppData | null> {
   try {
     let raw = await AsyncStorage.getItem(storageKeyFor(userId));
     if (!raw && !userId) {
@@ -225,25 +225,22 @@ export async function loadAppData(userId?: string): Promise<AppData> {
     if (!raw && userId) {
       raw = await AsyncStorage.getItem(STORAGE_KEY);
     }
-
-    if (!raw) {
-      const defaults = createDefaultData();
-      await saveAppData(defaults, userId);
-      return defaults;
-    }
-
-    const normalized = parseAppData(JSON.parse(raw));
-    if (!normalized) {
-      const defaults = createDefaultData();
-      await saveAppData(defaults, userId);
-      return defaults;
-    }
-
-    await saveAppData(normalized, userId);
-    return normalized;
+    if (!raw) return null;
+    return parseAppData(JSON.parse(raw));
   } catch {
-    return createDefaultData();
+    return null;
   }
+}
+
+export async function loadAppData(userId?: string): Promise<AppData> {
+  const existing = await loadExistingAppData(userId);
+  if (existing) {
+    await saveAppData(existing, userId);
+    return existing;
+  }
+  const defaults = createDefaultData();
+  await saveAppData(defaults, userId);
+  return defaults;
 }
 
 export async function saveAppData(data: AppData, userId?: string): Promise<void> {

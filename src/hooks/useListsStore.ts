@@ -6,6 +6,7 @@ import {
   isRemoteNewer,
   pushCloudData,
   subscribeListStates,
+  waitForSession,
   type CloudSnapshot,
 } from '../storage/cloudSync';
 import {
@@ -13,7 +14,7 @@ import {
   createDefaultData,
   createTab,
   createTodoId,
-  loadAppData,
+  loadExistingAppData,
   nextTabColor,
   saveAppData,
 } from '../storage/listsStorage';
@@ -66,25 +67,34 @@ export function useListsStore(userId: string) {
 
     (async () => {
       try {
-        const loaded = await loadAppData(userId);
-        let next = loaded;
+        await waitForSession();
+        if (!mounted) return;
+
+        const local = await loadExistingAppData(userId);
+        if (!mounted) return;
+
         try {
           const remote = await fetchCloudSnapshot(userId);
+          if (!mounted) return;
+
           if (remote) {
-            next = remote.data;
             lastPushedAt.current = remote.updatedAt;
             await saveAppData(remote.data, userId);
-          } else {
-            const pushedAt = await pushCloudData(userId, loaded);
-            lastPushedAt.current = pushedAt;
+            setData(remote.data);
+            return;
           }
-        } catch (cloudError) {
-          if (mounted) {
-            setError(describeCloudError(cloudError));
-          }
-        }
-        if (mounted) {
+
+          const next = local ?? createDefaultData();
+          await saveAppData(next, userId);
+          if (!mounted) return;
+          const pushedAt = await pushCloudData(userId, next);
+          if (!mounted) return;
+          lastPushedAt.current = pushedAt;
           setData(next);
+        } catch (cloudError) {
+          if (!mounted) return;
+          setError(describeCloudError(cloudError));
+          setData(local ?? createDefaultData());
         }
       } catch {
         if (mounted) {
