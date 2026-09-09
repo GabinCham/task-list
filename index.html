@@ -5,7 +5,7 @@
     <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     />
     <meta name="theme-color" content="#0b0f17" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -20,6 +20,15 @@
       body {
         height: 100%;
         background-color: #0b0f17;
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+      }
+      html,
+      body,
+      #root,
+      * {
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
       body {
         overflow: hidden;
@@ -38,6 +47,6 @@
       Active JavaScript pour utiliser Listes.
     </noscript>
     <div id="root"></div>
-  <script src="/task-list/_expo/static/js/web/index-96e30f3ffb9f8b84be7edcb319193a5e.js" defer></script>
+  <script src="/task-list/_expo/static/js/web/index-b3b57916f533f6b3d120713be484d62a.js" defer></script>
 </body>
 </html>
