@@ -3,13 +3,21 @@
     "name": "Listes",
     "slug": "listes",
     "version": "1.0.0",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0B0D"
+      "backgroundColor": "#0b0f17"
     },
     "ios": {
       "supportsTablet": true,
@@ -26,10 +34,18 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "name": "Listes",
+      "shortName": "Listes",
+      "themeColor": "#0b0f17",
+      "backgroundColor": "#0b0f17",
+      "display": "standalone",
+      "orientation": "portrait",
+      "startUrl": "./"
     },
     "plugins": [
-      "expo-font"
+      "expo-font",
+      "expo-updates"
     ]
   }
 }

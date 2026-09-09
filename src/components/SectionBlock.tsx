@@ -1,14 +1,17 @@
-import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
+  Animated,
+  Easing,
+  Platform,
   Pressable,
-  StyleSheet,
   Text,
   TextInput,
   View,
   type DimensionValue,
+  type ViewStyle,
 } from 'react-native';
-import { colors, SECTION_THEMES, withAlpha } from '../theme/colors';
+import { cardStyles } from '../theme/cardStyles';
+import { SECTION_THEMES, withAlpha } from '../theme/colors';
 import type { Section } from '../types';
 import { TodoItem } from './TodoItem';
 
@@ -20,6 +23,15 @@ type Props = {
   onToggleTodo: (todoId: string) => void;
   onDeleteTodo: (todoId: string) => void;
 };
+
+const webBlur = (
+  Platform.OS === 'web'
+    ? {
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+      }
+    : undefined
+) as ViewStyle | undefined;
 
 export function SectionBlock({
   section,
@@ -33,10 +45,22 @@ export function SectionBlock({
   const [draft, setDraft] = useState('');
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState(section.title);
+  const [focused, setFocused] = useState(false);
+  const rise = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setTitleDraft(section.title);
   }, [section.title]);
+
+  useEffect(() => {
+    Animated.timing(rise, {
+      toValue: 1,
+      duration: 420,
+      delay: 60 * (index + 1),
+      easing: Easing.bezier(0.16, 1, 0.3, 1),
+      useNativeDriver: false,
+    }).start();
+  }, [index, rise]);
 
   const submitTodo = () => {
     onAddTodo(draft);
@@ -55,173 +79,131 @@ export function SectionBlock({
   const progress = total === 0 ? 0 : done / total;
 
   return (
-    <View
-      style={[
-        styles.block,
-        {
-          borderColor: withAlpha(accent, 0.22),
-          shadowColor: accent,
-        },
-      ]}
+    <Animated.View
+      style={{
+        opacity: rise,
+        transform: [
+          {
+            translateY: rise.interpolate({
+              inputRange: [0, 1],
+              outputRange: [18, 0],
+            }),
+          },
+          {
+            scale: rise.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.98, 1],
+            }),
+          },
+        ],
+      }}
     >
-      <View style={styles.header}>
-        <View style={[styles.dot, { backgroundColor: accent }]} />
-        {editingTitle ? (
-          <TextInput
-            value={titleDraft}
-            onChangeText={setTitleDraft}
-            onBlur={commitTitle}
-            onSubmitEditing={commitTitle}
-            autoFocus
-            style={styles.titleInput}
-            maxLength={48}
-            placeholder="Nom de la section"
-            placeholderTextColor={colors.inkMuted}
-          />
-        ) : (
-          <Pressable
-            onLongPress={() => setEditingTitle(true)}
-            style={styles.titleWrap}
-            accessibilityHint="Appui long pour renommer"
+      <View
+        style={[
+          cardStyles.block,
+          {
+            backgroundColor: withAlpha(accent, 0.08),
+            borderColor: withAlpha(accent, 0.15),
+          },
+          webBlur,
+        ]}
+      >
+        <View style={cardStyles.header}>
+          <View
+            style={[
+              cardStyles.dotHalo,
+              { backgroundColor: withAlpha(accent, 0.15) },
+            ]}
           >
-            <Text style={styles.title} numberOfLines={2}>
-              {section.title}
-            </Text>
-          </Pressable>
-        )}
-        <Text style={styles.count}>
-          {done}/{total}
-        </Text>
-      </View>
+            <View style={[cardStyles.dot, { backgroundColor: accent }]} />
+          </View>
+          {editingTitle ? (
+            <TextInput
+              value={titleDraft}
+              onChangeText={setTitleDraft}
+              onBlur={commitTitle}
+              onSubmitEditing={commitTitle}
+              autoFocus
+              style={cardStyles.titleInput}
+              maxLength={48}
+              placeholder="Nom de la section"
+              placeholderTextColor="rgba(244, 246, 251, 0.35)"
+            />
+          ) : (
+            <Pressable
+              onLongPress={() => setEditingTitle(true)}
+              style={cardStyles.titleWrap}
+              accessibilityHint="Appui long pour renommer"
+            >
+              <Text style={cardStyles.title} numberOfLines={2}>
+                {section.title}
+              </Text>
+            </Pressable>
+          )}
+          <Text style={cardStyles.count}>
+            {done}/{total}
+          </Text>
+        </View>
 
-      <View style={styles.progressTrack}>
-        <View
-          style={[
-            styles.progressFill,
+        <View style={cardStyles.progressTrack}>
+          <View
+            style={[
+              cardStyles.progressFill,
             {
               width: `${progress * 100}%` as DimensionValue,
               backgroundColor: accent,
+              ...(Platform.OS === 'web'
+                ? { transitionProperty: 'width', transitionDuration: '500ms' }
+                : null),
             },
-          ]}
-        />
-      </View>
+            ]}
+          />
+        </View>
 
-      {section.todos.map((todo, todoIndex) => (
-        <TodoItem
-          key={todo.id}
-          todo={todo}
-          accent={accent}
-          showDivider={todoIndex < section.todos.length - 1}
-          onToggle={() => onToggleTodo(todo.id)}
-          onDelete={() => onDeleteTodo(todo.id)}
-        />
-      ))}
+        {section.todos.length > 0 ? (
+          <View style={cardStyles.list}>
+            {section.todos.map((todo, todoIndex) => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                accent={accent}
+                isFirst={todoIndex === 0}
+                onToggle={() => onToggleTodo(todo.id)}
+                onDelete={() => onDeleteTodo(todo.id)}
+              />
+            ))}
+          </View>
+        ) : null}
 
-      <View style={styles.addRow}>
-        <TextInput
-          value={draft}
-          onChangeText={setDraft}
-          onSubmitEditing={submitTodo}
-          placeholder="Nouvelle tâche…"
-          placeholderTextColor={colors.inkMuted}
-          style={styles.input}
-          returnKeyType="done"
-        />
-        <Pressable
-          onPress={submitTodo}
-          style={[
-            styles.addBtn,
-            { backgroundColor: accent },
-            !draft.trim() && styles.addBtnDisabled,
-          ]}
-          disabled={!draft.trim()}
-          accessibilityRole="button"
-          accessibilityLabel="Ajouter"
-        >
-          <Ionicons name="add" size={26} color={colors.plus} />
-        </Pressable>
+        <View style={cardStyles.addRow}>
+          <TextInput
+            value={draft}
+            onChangeText={setDraft}
+            onSubmitEditing={submitTodo}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setFocused(false)}
+            placeholder="Nouvelle tâche…"
+            placeholderTextColor="rgba(244, 246, 251, 0.35)"
+            style={[
+              cardStyles.input,
+              focused && {
+                borderWidth: 1,
+                borderColor: withAlpha(accent, 0.6),
+              },
+            ]}
+            returnKeyType="done"
+            accessibilityLabel={`Nouvelle tâche dans ${section.title}`}
+          />
+          <Pressable
+            onPress={submitTodo}
+            style={[cardStyles.addBtn, { backgroundColor: accent }]}
+            accessibilityRole="button"
+            accessibilityLabel="Ajouter"
+          >
+            <Text style={cardStyles.addBtnText}>+</Text>
+          </Pressable>
+        </View>
       </View>
-    </View>
+    </Animated.View>
   );
 }
-
-const styles = StyleSheet.create({
-  block: {
-    backgroundColor: colors.surface,
-    borderRadius: 32,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 18,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  titleWrap: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-    letterSpacing: -0.2,
-  },
-  titleInput: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '700',
-    color: colors.white,
-    paddingVertical: 0,
-  },
-  count: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.inkMuted,
-  },
-  progressTrack: {
-    height: 5,
-    borderRadius: 3,
-    backgroundColor: '#2A2A32',
-    marginTop: 12,
-    marginBottom: 8,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
-  addRow: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: colors.backgroundAlt,
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: colors.white,
-  },
-  addBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  addBtnDisabled: {
-    opacity: 0.4,
-  },
-});

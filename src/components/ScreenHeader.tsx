@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/fonts';
 import { GradientProgressBar } from './GradientProgressBar';
 
 type Props = {
@@ -51,9 +52,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   date: {
+    fontFamily: fonts.bodySemi,
     fontSize: 12,
-    fontWeight: '700',
-    color: colors.inkMuted,
+    color: 'rgba(244, 246, 251, 0.5)',
     letterSpacing: 1.4,
   },
   settingsBtn: {
@@ -71,24 +72,26 @@ const styles = StyleSheet.create({
   },
   tabName: {
     flex: 1,
+    fontFamily: fonts.displayBold,
     fontSize: 34,
-    fontWeight: '800',
-    color: colors.white,
+    color: colors.foreground,
     letterSpacing: -1,
   },
   counter: {
     alignItems: 'flex-end',
   },
   counterValue: {
+    fontFamily: fonts.displayBold,
     fontSize: 28,
-    fontWeight: '800',
-    color: colors.white,
+    color: colors.foreground,
+    fontVariant: ['tabular-nums'],
     letterSpacing: -0.8,
   },
   counterLabel: {
+    fontFamily: fonts.body,
     fontSize: 12,
-    fontWeight: '600',
-    color: colors.inkMuted,
+    fontWeight: '400',
+    color: 'rgba(244, 246, 251, 0.5)',
     marginTop: -2,
   },
 });

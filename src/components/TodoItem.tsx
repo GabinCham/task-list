@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors } from '../theme/colors';
+import { fonts } from '../theme/fonts';
 import type { Todo } from '../types';
 
 type Props = {
   todo: Todo;
   accent: string;
-  showDivider: boolean;
+  isFirst: boolean;
   onToggle: () => void;
   onDelete: () => void;
 };
@@ -13,22 +14,23 @@ type Props = {
 export function TodoItem({
   todo,
   accent,
-  showDivider,
+  isFirst,
   onToggle,
   onDelete,
 }: Props) {
   return (
-    <View style={[styles.row, showDivider && styles.divider]}>
+    <View style={[styles.row, !isFirst && styles.divider]}>
       <Pressable
         onPress={onToggle}
         style={[
           styles.check,
-          { borderColor: todo.completed ? accent : colors.checkIdle },
-          todo.completed && { backgroundColor: accent },
+          todo.completed
+            ? { backgroundColor: accent, borderColor: accent }
+            : styles.checkIdle,
         ]}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: todo.completed }}
-        hitSlop={8}
+        accessibilityLabel={todo.completed ? 'Marquer à faire' : 'Marquer terminée'}
       >
         {todo.completed ? <Text style={styles.checkMark}>✓</Text> : null}
       </Pressable>
@@ -38,8 +40,12 @@ export function TodoItem({
       >
         {todo.text}
       </Text>
-      <Pressable onPress={onDelete} hitSlop={10} accessibilityLabel="Supprimer">
-        <Text style={styles.delete}>×</Text>
+      <Pressable
+        onPress={onDelete}
+        style={styles.deleteBtn}
+        accessibilityLabel="Supprimer la tâche"
+      >
+        <Text style={styles.delete}>✕</Text>
       </Pressable>
     </View>
   );
@@ -53,39 +59,52 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   divider: {
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.06)',
   },
   check: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 1.5,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    flexShrink: 0,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  checkIdle: {
     backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: 'rgba(244, 246, 251, 0.25)',
   },
   checkMark: {
-    color: colors.white,
-    fontSize: 12,
+    color: colors.plus,
+    fontFamily: fonts.bodySemi,
+    fontSize: 14,
     fontWeight: '700',
-    marginTop: -1,
+    lineHeight: 16,
   },
   text: {
     flex: 1,
-    color: colors.white,
-    fontSize: 16,
+    fontFamily: fonts.body,
+    fontSize: 15,
     lineHeight: 22,
-    fontWeight: '500',
+    color: colors.foreground,
   },
   textDone: {
-    color: colors.completed,
+    color: 'rgba(244, 246, 251, 0.4)',
     textDecorationLine: 'line-through',
   },
+  deleteBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
   delete: {
-    color: colors.inkMuted,
-    fontSize: 20,
+    color: 'rgba(244, 246, 251, 0.3)',
+    fontSize: 18,
     lineHeight: 20,
-    paddingHorizontal: 4,
+    fontWeight: '400',
   },
 });

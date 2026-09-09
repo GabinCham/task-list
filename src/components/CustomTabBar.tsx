@@ -83,7 +83,7 @@ export function CustomTabBar({ tabs, activeTabId, onSelect, onAddTab }: Props) {
 
 const styles = StyleSheet.create({
   bar: {
-    backgroundColor: colors.tabBar,
+    backgroundColor: 'rgba(11, 15, 23, 0.78)',
     paddingTop: 10,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: colors.border,

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
 import { TODAY_COLOR, type Todo } from '../types';
 import { todayHeaderLabel } from '../utils/dates';
 import { PinnedSettingsModal } from './PinnedSettingsModal';
@@ -62,7 +61,7 @@ export function TodayScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   content: {
     paddingHorizontal: 16,

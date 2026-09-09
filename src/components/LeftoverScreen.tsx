@@ -81,7 +81,7 @@ export function LeftoverScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   content: {
     paddingHorizontal: 16,

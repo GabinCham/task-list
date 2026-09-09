@@ -1,0 +1,25 @@
+{
+  "name": "Listes",
+  "short_name": "Listes",
+  "description": "Tes listes du jour, sans compte Apple payant.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#0b0f17",
+  "background_color": "#0b0f17",
+  "icons": [
+    {
+      "src": "logo192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "logo512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ]
+}

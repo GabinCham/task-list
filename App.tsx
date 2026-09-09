@@ -3,9 +3,11 @@ import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { CustomTabBar } from './src/components/CustomTabBar';
+import { MeshGlow } from './src/components/MeshGlow';
 import { TabRoute } from './src/components/TabRoute';
 import { ListsProvider, useLists } from './src/context/ListsContext';
 import { colors } from './src/theme/colors';
+import { fonts, useAppFonts } from './src/theme/fonts';
 import {
   LEFTOVER_COLOR,
   LEFTOVER_TAB_ID,
@@ -50,11 +52,14 @@ function AppNavigator() {
     return TODAY_TAB_ID;
   }, [selectedTabId, navTabs]);
 
+  const activeAccent =
+    navTabs.find((tab) => tab.id === activeTabId)?.color ?? TODAY_COLOR;
+
   if (store.loading || !store.data) {
     return (
       <View style={styles.boot}>
         <Text style={styles.bootBrand}>Listes</Text>
-        <ActivityIndicator color={colors.accent} size="large" />
+        <ActivityIndicator color={colors.now} size="large" />
         <StatusBar style="light" />
       </View>
     );
@@ -62,6 +67,7 @@ function AppNavigator() {
 
   return (
     <View style={styles.shell}>
+      <MeshGlow accent={activeAccent} />
       <StatusBar style="light" />
       {store.error ? (
         <View style={styles.errorBanner}>
@@ -85,6 +91,17 @@ function AppNavigator() {
 }
 
 export default function App() {
+  const fontsLoaded = useAppFonts();
+
+  if (!fontsLoaded) {
+    return (
+      <View style={styles.boot}>
+        <ActivityIndicator color={colors.now} size="large" />
+        <StatusBar style="light" />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaProvider>
       <ListsProvider>
@@ -110,9 +127,9 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   bootBrand: {
+    fontFamily: fonts.displayBold,
     fontSize: 36,
-    fontWeight: '800',
-    color: colors.white,
+    color: colors.foreground,
     letterSpacing: -1,
   },
   errorBanner: {

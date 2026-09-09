@@ -1,7 +1,7 @@
 export const TODAY_TAB_ID = 'today';
 export const LEFTOVER_TAB_ID = 'leftover';
-export const TODAY_COLOR = '#FF8C42';
-export const LEFTOVER_COLOR = '#C77DFF';
+export const TODAY_COLOR = '#ff7a5c';
+export const LEFTOVER_COLOR = '#b892ff';
 
 export type Todo = {
   id: string;
@@ -65,9 +65,9 @@ export const TAB_ICON_OPTIONS: TabIconName[] = [
 ];
 
 export const TAB_COLORS = [
-  '#FF8C42',
-  '#4CC9F0',
-  '#C77DFF',
+  '#ff7a5c',
+  '#6fbef6',
+  '#b892ff',
   '#FF6B9D',
   '#7CFFB2',
   '#FFD166',

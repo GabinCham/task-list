@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../theme/colors';
 import type { TabIconName, TabList } from '../types';
 import { todayHeaderLabel } from '../utils/dates';
 import { CustomizeTabModal } from './CustomizeTabModal';
@@ -90,7 +89,7 @@ export function TabScreen({
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: 'transparent',
   },
   content: {
     paddingHorizontal: 16,
