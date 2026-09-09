@@ -1,11 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useRef, useState } from 'react';
 import {
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
   View,
+  type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, withAlpha } from '../theme/colors';
@@ -46,7 +48,16 @@ export function CustomTabBar({ tabs, activeTabId, onSelect, onAddTab }: Props) {
   }, [activeTabId, layoutTick, tabs]);
 
   return (
-    <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+    <View
+      style={[
+        styles.bar,
+        Platform.OS === 'web'
+          ? ({
+              paddingBottom: 'max(10px, env(safe-area-inset-bottom))',
+            } as unknown as ViewStyle)
+          : { paddingBottom: Math.max(insets.bottom, 10) },
+      ]}
+    >
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -110,7 +121,7 @@ const styles = StyleSheet.create({
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(11, 15, 23, 0.78)',
+    backgroundColor: colors.background,
     paddingTop: 10,
     paddingRight: 10,
     borderTopWidth: StyleSheet.hairlineWidth,

@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthScreen } from './src/components/AuthScreen';
 import { CustomTabBar } from './src/components/CustomTabBar';
@@ -159,6 +159,7 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     backgroundColor: colors.background,
+    ...(Platform.OS === 'web' ? { height: '100%' as const, minHeight: 0 } : null),
   },
   screen: {
     flex: 1,
