@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
-import { fetchCloudData, pushCloudData } from '../storage/cloudSync';
+import { describeCloudError, fetchCloudData, pushCloudData } from '../storage/cloudSync';
 import {
   applyDailyRollover,
   createDefaultData,
@@ -54,9 +54,9 @@ export function useListsStore(userId: string) {
           } else {
             await pushCloudData(userId, loaded);
           }
-        } catch {
+        } catch (cloudError) {
           if (mounted) {
-            setError('Hors ligne : tes listes restent sur cet appareil.');
+            setError(describeCloudError(cloudError));
           }
         }
         if (mounted) {
@@ -95,8 +95,8 @@ export function useListsStore(userId: string) {
         cloudTimer.current = setTimeout(() => {
           const snapshot = pendingCloud.current;
           if (!snapshot) return;
-          void pushCloudData(userId, snapshot).catch(() => {
-            setError('Impossible de synchroniser le cloud.');
+          void pushCloudData(userId, snapshot).catch((cloudError) => {
+            setError(describeCloudError(cloudError));
           });
         }, 500);
         return next;
