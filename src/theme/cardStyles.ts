@@ -91,7 +91,7 @@ export const cardStyles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontFamily: fonts.body,
-    fontSize: 15,
+    fontSize: 16,
     color: colors.foreground,
     borderWidth: 1,
     borderColor: 'transparent',
