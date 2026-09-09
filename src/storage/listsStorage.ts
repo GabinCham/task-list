@@ -13,6 +13,10 @@ import { localDateKey } from '../utils/dates';
 const STORAGE_KEY = '@listes/app-data-v3';
 const LEGACY_KEYS = ['@listes/app-data-v2', '@listes/app-data-v1'];
 
+function storageKeyFor(userId?: string) {
+  return userId ? `${STORAGE_KEY}:${userId}` : STORAGE_KEY;
+}
+
 function createSection(title: string, index: number): Section {
   return {
     id: `section-${index}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -177,7 +181,7 @@ export function applyDailyRollover(data: AppData, now = new Date()): AppData {
   };
 }
 
-function normalizeData(parsed: unknown): AppData | null {
+export function parseAppData(parsed: unknown): AppData | null {
   if (!parsed || typeof parsed !== 'object' || !('tabs' in parsed)) {
     return null;
   }
@@ -209,38 +213,41 @@ function normalizeData(parsed: unknown): AppData | null {
   });
 }
 
-export async function loadAppData(): Promise<AppData> {
+export async function loadAppData(userId?: string): Promise<AppData> {
   try {
-    let raw = await AsyncStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    let raw = await AsyncStorage.getItem(storageKeyFor(userId));
+    if (!raw && !userId) {
       for (const key of LEGACY_KEYS) {
         raw = await AsyncStorage.getItem(key);
         if (raw) break;
       }
     }
+    if (!raw && userId) {
+      raw = await AsyncStorage.getItem(STORAGE_KEY);
+    }
 
     if (!raw) {
       const defaults = createDefaultData();
-      await saveAppData(defaults);
+      await saveAppData(defaults, userId);
       return defaults;
     }
 
-    const normalized = normalizeData(JSON.parse(raw));
+    const normalized = parseAppData(JSON.parse(raw));
     if (!normalized) {
       const defaults = createDefaultData();
-      await saveAppData(defaults);
+      await saveAppData(defaults, userId);
       return defaults;
     }
 
-    await saveAppData(normalized);
+    await saveAppData(normalized, userId);
     return normalized;
   } catch {
     return createDefaultData();
   }
 }
 
-export async function saveAppData(data: AppData): Promise<void> {
-  await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+export async function saveAppData(data: AppData, userId?: string): Promise<void> {
+  await AsyncStorage.setItem(storageKeyFor(userId), JSON.stringify(data));
 }
 
 export function createTodoId(): string {

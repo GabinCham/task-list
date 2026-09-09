@@ -2,9 +2,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { AuthScreen } from './src/components/AuthScreen';
 import { CustomTabBar } from './src/components/CustomTabBar';
 import { MeshGlow } from './src/components/MeshGlow';
 import { TabRoute } from './src/components/TabRoute';
+import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { ListsProvider, useLists } from './src/context/ListsContext';
 import { colors } from './src/theme/colors';
 import { fonts, useAppFonts } from './src/theme/fonts';
@@ -104,10 +106,47 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ListsProvider>
+      <AuthProvider>
+        <Root />
+      </AuthProvider>
+    </SafeAreaProvider>
+  );
+}
+
+function Root() {
+  const auth = useAuth();
+
+  if (auth.loading) {
+    return (
+      <View style={styles.boot}>
+        <Text style={styles.bootBrand}>Listes</Text>
+        <ActivityIndicator color={colors.now} size="large" />
+        <StatusBar style="light" />
+      </View>
+    );
+  }
+
+  if (!auth.configured) {
+    return (
+      <ListsProvider userId="local">
         <AppNavigator />
       </ListsProvider>
-    </SafeAreaProvider>
+    );
+  }
+
+  if (!auth.user) {
+    return (
+      <>
+        <AuthScreen />
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
+  return (
+    <ListsProvider userId={auth.user.id}>
+      <AppNavigator />
+    </ListsProvider>
   );
 }
 

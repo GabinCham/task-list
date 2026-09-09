@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import { fetchCloudData, pushCloudData } from '../storage/cloudSync';
 import {
   applyDailyRollover,
   createDefaultData,
@@ -31,20 +32,35 @@ function mapLeftoverDay(
     .filter((day) => day.todos.length > 0);
 }
 
-export function useListsStore() {
+export function useListsStore(userId: string) {
   const [data, setData] = useState<AppData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const cloudTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingCloud = useRef<AppData | null>(null);
 
   useEffect(() => {
     let mounted = true;
 
     (async () => {
       try {
-        const loaded = await loadAppData();
+        const loaded = await loadAppData(userId);
+        let next = loaded;
+        try {
+          const remote = await fetchCloudData(userId);
+          if (remote) {
+            next = remote;
+            await saveAppData(remote, userId);
+          } else {
+            await pushCloudData(userId, loaded);
+          }
+        } catch {
+          if (mounted) {
+            setError('Hors ligne : tes listes restent sur cet appareil.');
+          }
+        }
         if (mounted) {
-          setData(loaded);
-          setError(null);
+          setData(next);
         }
       } catch {
         if (mounted) {
@@ -59,23 +75,35 @@ export function useListsStore() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [userId]);
 
-  const persist = useCallback((updater: (prev: AppData) => AppData) => {
-    setData((prev) => {
-      if (!prev) return prev;
-      const next = updater(prev);
-      void (async () => {
-        try {
-          await saveAppData(next);
-          setError(null);
-        } catch {
-          setError('Impossible d’enregistrer les modifications.');
-        }
-      })();
-      return next;
-    });
-  }, []);
+  const persist = useCallback(
+    (updater: (prev: AppData) => AppData) => {
+      setData((prev) => {
+        if (!prev) return prev;
+        const next = updater(prev);
+        pendingCloud.current = next;
+        void (async () => {
+          try {
+            await saveAppData(next, userId);
+            setError(null);
+          } catch {
+            setError('Impossible d’enregistrer les modifications.');
+          }
+        })();
+        if (cloudTimer.current) clearTimeout(cloudTimer.current);
+        cloudTimer.current = setTimeout(() => {
+          const snapshot = pendingCloud.current;
+          if (!snapshot) return;
+          void pushCloudData(userId, snapshot).catch(() => {
+            setError('Impossible de synchroniser le cloud.');
+          });
+        }, 500);
+        return next;
+      });
+    },
+    [userId],
+  );
 
   useEffect(() => {
     if (!data) return;

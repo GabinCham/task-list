@@ -5,8 +5,14 @@ type ListsStore = ReturnType<typeof useListsStore>;
 
 const ListsContext = createContext<ListsStore | null>(null);
 
-export function ListsProvider({ children }: { children: ReactNode }) {
-  const store = useListsStore();
+export function ListsProvider({
+  userId,
+  children,
+}: {
+  userId: string;
+  children: ReactNode;
+}) {
+  const store = useListsStore(userId);
   return (
     <ListsContext.Provider value={store}>{children}</ListsContext.Provider>
   );

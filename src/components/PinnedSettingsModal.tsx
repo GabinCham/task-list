@@ -1,4 +1,5 @@
-import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Modal, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 import { colors, withAlpha } from '../theme/colors';
 
 type Props = {
@@ -8,7 +9,19 @@ type Props = {
 };
 
 export function PinnedSettingsModal({ visible, onClose, onResetAll }: Props) {
+  const { user, signOut } = useAuth();
+
   const confirmReset = () => {
+    const run = () => {
+      onResetAll();
+      onClose();
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Réinitialiser toutes les listes ?')) run();
+      return;
+    }
+
     Alert.alert(
       'Réinitialiser Listes ?',
       'Toutes les tâches et personnalisations seront effacées.',
@@ -17,10 +30,7 @@ export function PinnedSettingsModal({ visible, onClose, onResetAll }: Props) {
         {
           text: 'Réinitialiser',
           style: 'destructive',
-          onPress: () => {
-            onResetAll();
-            onClose();
-          },
+          onPress: run,
         },
       ],
     );
@@ -37,11 +47,23 @@ export function PinnedSettingsModal({ visible, onClose, onResetAll }: Props) {
         <View style={styles.sheet}>
           <Text style={styles.heading}>Paramètres</Text>
           <Text style={styles.copy}>
-            L’onglet du jour se vide chaque nuit à minuit. Ce qui n’est pas
-            coché part dans Fais pour.
+            Tes listes sont enregistrées sur ton compte. Tu peux fermer l’app ou
+            passer en navigation privée : reconnecte-toi et elles reviennent.
           </Text>
+          {user?.email ? (
+            <Text style={styles.account}>{user.email}</Text>
+          ) : null}
           <Pressable onPress={onClose} style={styles.closeBtn}>
             <Text style={styles.closeText}>Fermer</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              void signOut();
+              onClose();
+            }}
+            style={styles.resetBtn}
+          >
+            <Text style={styles.resetText}>Se déconnecter</Text>
           </Pressable>
           <Pressable
             onPress={confirmReset}
@@ -79,6 +101,11 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: colors.inkMuted,
+    marginBottom: 4,
+  },
+  account: {
+    fontSize: 14,
+    color: colors.later,
     marginBottom: 8,
   },
   closeBtn: {
