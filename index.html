@@ -19,11 +19,19 @@
     <title>Listes</title>
     <style id="expo-reset">
       html,
-      body {
-        height: 100%;
+      body,
+      #root {
         background-color: #0b0f17;
         -webkit-text-size-adjust: 100%;
         text-size-adjust: 100%;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        min-height: 100dvh;
+        min-height: -webkit-fill-available;
       }
       html,
       body,
@@ -36,9 +44,13 @@
         overflow: hidden;
       }
       #root {
+        position: fixed;
+        inset: 0;
         display: flex;
+        flex-direction: column;
+        width: 100%;
         height: 100%;
-        flex: 1;
+        min-height: -webkit-fill-available;
       }
     </style>
   <meta name="theme-color" content="#0b0f17">
@@ -49,6 +61,6 @@
       Active JavaScript pour utiliser Listes.
     </noscript>
     <div id="root"></div>
-  <script src="/task-list/_expo/static/js/web/index-82e6a102b7929ce2c1008a268bd4dba3.js" defer></script>
+  <script src="/task-list/_expo/static/js/web/index-159b62f3fafb20f1ea8bd67251b9b65c.js" defer></script>
 </body>
 </html>
