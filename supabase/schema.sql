@@ -26,3 +26,12 @@ create policy "Users can update own lists"
   for update
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+alter table public.list_states replica identity full;
+
+do $$
+begin
+  alter publication supabase_realtime add table public.list_states;
+exception
+  when duplicate_object then null;
+end $$;

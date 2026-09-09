@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState } from 'react-native';
-import { describeCloudError, fetchCloudData, pushCloudData } from '../storage/cloudSync';
+import { AppState, Platform } from 'react-native';
+import {
+  describeCloudError,
+  fetchCloudSnapshot,
+  isRemoteNewer,
+  pushCloudData,
+  subscribeListStates,
+  type CloudSnapshot,
+} from '../storage/cloudSync';
 import {
   applyDailyRollover,
   createDefaultData,
@@ -38,6 +45,21 @@ export function useListsStore(userId: string) {
   const [error, setError] = useState<string | null>(null);
   const cloudTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingCloud = useRef<AppData | null>(null);
+  const lastPushedAt = useRef<string | null>(null);
+
+  const applySnapshot = useCallback(
+    (snapshot: CloudSnapshot, source: 'boot' | 'resume' | 'live') => {
+      if (source !== 'boot' && cloudTimer.current) return;
+      if (source !== 'boot' && !isRemoteNewer(snapshot.updatedAt, lastPushedAt.current)) {
+        return;
+      }
+      lastPushedAt.current = snapshot.updatedAt;
+      setData(snapshot.data);
+      void saveAppData(snapshot.data, userId);
+      setError(null);
+    },
+    [userId],
+  );
 
   useEffect(() => {
     let mounted = true;
@@ -47,12 +69,14 @@ export function useListsStore(userId: string) {
         const loaded = await loadAppData(userId);
         let next = loaded;
         try {
-          const remote = await fetchCloudData(userId);
+          const remote = await fetchCloudSnapshot(userId);
           if (remote) {
-            next = remote;
-            await saveAppData(remote, userId);
+            next = remote.data;
+            lastPushedAt.current = remote.updatedAt;
+            await saveAppData(remote.data, userId);
           } else {
-            await pushCloudData(userId, loaded);
+            const pushedAt = await pushCloudData(userId, loaded);
+            lastPushedAt.current = pushedAt;
           }
         } catch (cloudError) {
           if (mounted) {
@@ -95,9 +119,13 @@ export function useListsStore(userId: string) {
         cloudTimer.current = setTimeout(() => {
           const snapshot = pendingCloud.current;
           if (!snapshot) return;
-          void pushCloudData(userId, snapshot).catch((cloudError) => {
-            setError(describeCloudError(cloudError));
-          });
+          void pushCloudData(userId, snapshot)
+            .then((pushedAt) => {
+              if (pushedAt) lastPushedAt.current = pushedAt;
+            })
+            .catch((cloudError) => {
+              setError(describeCloudError(cloudError));
+            });
         }, 500);
         return next;
       });
@@ -109,17 +137,49 @@ export function useListsStore(userId: string) {
     if (!data) return;
 
     const runRollover = () => persist((prev) => applyDailyRollover(prev));
+    const pullRemote = () => {
+      void fetchCloudSnapshot(userId)
+        .then((remote) => {
+          if (remote) applySnapshot(remote, 'resume');
+        })
+        .catch((cloudError) => {
+          setError(describeCloudError(cloudError));
+        });
+    };
 
     const timeoutId = setTimeout(runRollover, msUntilNextMidnight());
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') runRollover();
+      if (state === 'active') {
+        runRollover();
+        pullRemote();
+      }
     });
+
+    const onVisible = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        runRollover();
+        pullRemote();
+      }
+    };
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.addEventListener('visibilitychange', onVisible);
+    }
 
     return () => {
       clearTimeout(timeoutId);
       subscription.remove();
+      if (Platform.OS === 'web' && typeof document !== 'undefined') {
+        document.removeEventListener('visibilitychange', onVisible);
+      }
     };
-  }, [data?.lastRolloverDate, persist]);
+  }, [applySnapshot, data?.lastRolloverDate, persist, userId]);
+
+  useEffect(() => {
+    if (loading) return;
+    return subscribeListStates(userId, (snapshot) => {
+      applySnapshot(snapshot, 'live');
+    });
+  }, [applySnapshot, loading, userId]);
 
   const updateTab = useCallback(
     (
