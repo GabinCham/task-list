@@ -14,6 +14,23 @@ type Props = {
   onDelete: () => void;
 };
 
+function isUppercaseWord(value: string) {
+  const letters = value.replace(/[^A-Za-zÀ-ÖØ-öø-ÿ]/g, '');
+  return letters.length > 0 && letters === letters.toUpperCase() && letters !== letters.toLowerCase();
+}
+
+function TodoText({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(/(\s+)/).map((part, index) => (
+        <Text key={`${part}-${index}`} style={isUppercaseWord(part) ? styles.uppercaseWord : undefined}>
+          {part}
+        </Text>
+      ))}
+    </>
+  );
+}
+
 export function TodoItem({
   todo,
   accent,
@@ -73,7 +90,7 @@ export function TodoItem({
           accessibilityHint={onEdit ? 'Appuyez pour modifier' : undefined}
         >
           <Text style={[styles.text, todo.completed && styles.textDone]} numberOfLines={3}>
-            {todo.text}
+            <TodoText text={todo.text} />
           </Text>
         </Pressable>
       )}
@@ -142,6 +159,9 @@ const styles = StyleSheet.create({
   textInput: {
     padding: 0,
     minHeight: 22,
+  },
+  uppercaseWord: {
+    color: colors.danger,
   },
   moveBtn: {
     borderWidth: 1,
