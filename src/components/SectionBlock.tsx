@@ -21,6 +21,7 @@ type Props = {
   onRename: (title: string) => void;
   onAddTodo: (text: string) => void;
   onToggleTodo: (todoId: string) => void;
+  onUpdateTodo: (todoId: string, text: string) => void;
   onDeleteTodo: (todoId: string) => void;
 };
 
@@ -39,6 +40,7 @@ export function SectionBlock({
   onRename,
   onAddTodo,
   onToggleTodo,
+  onUpdateTodo,
   onDeleteTodo,
 }: Props) {
   const accent = SECTION_THEMES[index % SECTION_THEMES.length].accent;
@@ -131,9 +133,9 @@ export function SectionBlock({
             />
           ) : (
             <Pressable
-              onLongPress={() => setEditingTitle(true)}
+              onPress={() => setEditingTitle(true)}
               style={cardStyles.titleWrap}
-              accessibilityHint="Appui long pour renommer"
+              accessibilityHint="Appuyez pour renommer"
             >
               <Text style={cardStyles.title} numberOfLines={2}>
                 {section.title}
@@ -169,6 +171,7 @@ export function SectionBlock({
                 accent={accent}
                 isFirst={todoIndex === 0}
                 onToggle={() => onToggleTodo(todo.id)}
+                onEdit={(text) => onUpdateTodo(todo.id, text)}
                 onDelete={() => onDeleteTodo(todo.id)}
               />
             ))}

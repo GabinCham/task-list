@@ -18,6 +18,8 @@ type Props = {
   emptyText: string;
   onAddTodo?: (text: string) => void;
   onToggleTodo: (todoId: string) => void;
+  onUpdateTodo?: (todoId: string, text: string) => void;
+  onMoveTodoToToday?: (todoId: string) => void;
   onDeleteTodo: (todoId: string) => void;
 };
 
@@ -36,6 +38,8 @@ export function SimpleListCard({
   emptyText,
   onAddTodo,
   onToggleTodo,
+  onUpdateTodo,
+  onMoveTodoToToday,
   onDeleteTodo,
 }: Props) {
   const [draft, setDraft] = useState('');
@@ -69,6 +73,8 @@ export function SimpleListCard({
               accent={accent}
               isFirst={index === 0}
               onToggle={() => onToggleTodo(todo.id)}
+              onEdit={onUpdateTodo ? (text) => onUpdateTodo(todo.id, text) : undefined}
+              onMoveToToday={onMoveTodoToToday ? () => onMoveTodoToToday(todo.id) : undefined}
               onDelete={() => onDeleteTodo(todo.id)}
             />
           ))}

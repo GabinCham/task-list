@@ -20,7 +20,7 @@ import {
   saveAppData,
 } from '../storage/listsStorage';
 import type { AppData, LeftoverDay, TabIconName, TabList, Todo } from '../types';
-import { msUntilNextMidnight } from '../utils/dates';
+import { localDateKey, msUntilNextMidnight } from '../utils/dates';
 
 function mapTab(data: AppData, tabId: string, mapper: (tab: TabList) => TabList): AppData {
   return {
@@ -277,6 +277,29 @@ export function useListsStore(userId: string) {
     [persist],
   );
 
+  const updateTodo = useCallback(
+    (tabId: string, sectionId: string, todoId: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      persist((prev) =>
+        mapTab(prev, tabId, (tab) => ({
+          ...tab,
+          sections: tab.sections.map((section) =>
+            section.id === sectionId
+              ? {
+                  ...section,
+                  todos: section.todos.map((item) =>
+                    item.id === todoId ? { ...item, text: trimmed } : item,
+                  ),
+                }
+              : section,
+          ) as TabList['sections'],
+        })),
+      );
+    },
+    [persist],
+  );
+
   const deleteTodo = useCallback(
     (tabId: string, sectionId: string, todoId: string) => {
       persist((prev) =>
@@ -314,6 +337,35 @@ export function useListsStore(userId: string) {
     [persist],
   );
 
+  const addScheduledTodo = useCallback(
+    (date: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed || date < localDateKey()) return;
+
+      const todo: Todo = {
+        id: createTodoId(),
+        text: trimmed,
+        completed: false,
+        createdAt: Date.now(),
+      };
+
+      persist((prev) => {
+        if (date === localDateKey()) {
+          return { ...prev, todayTodos: [todo, ...prev.todayTodos] };
+        }
+
+        const existing = prev.scheduledDays.find((day) => day.date === date);
+        const scheduledDays = existing
+          ? prev.scheduledDays.map((day) =>
+              day.date === date ? { ...day, todos: [todo, ...day.todos] } : day,
+            )
+          : [{ date, todos: [todo] }, ...prev.scheduledDays];
+        return { ...prev, scheduledDays };
+      });
+    },
+    [persist],
+  );
+
   const toggleTodayTodo = useCallback(
     (todoId: string) => {
       persist((prev) => ({
@@ -331,6 +383,20 @@ export function useListsStore(userId: string) {
       persist((prev) => ({
         ...prev,
         todayTodos: prev.todayTodos.filter((item) => item.id !== todoId),
+      }));
+    },
+    [persist],
+  );
+
+  const updateTodayTodo = useCallback(
+    (todoId: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      persist((prev) => ({
+        ...prev,
+        todayTodos: prev.todayTodos.map((item) =>
+          item.id === todoId ? { ...item, text: trimmed } : item,
+        ),
       }));
     },
     [persist],
@@ -358,6 +424,41 @@ export function useListsStore(userId: string) {
           todos.filter((item) => item.id !== todoId),
         ),
       }));
+    },
+    [persist],
+  );
+
+  const updateLeftoverTodo = useCallback(
+    (date: string, todoId: string, text: string) => {
+      const trimmed = text.trim();
+      if (!trimmed) return;
+      persist((prev) => ({
+        ...prev,
+        leftoverDays: mapLeftoverDay(prev.leftoverDays, date, (todos) =>
+          todos.map((item) =>
+            item.id === todoId ? { ...item, text: trimmed } : item,
+          ),
+        ),
+      }));
+    },
+    [persist],
+  );
+
+  const moveLeftoverTodoToToday = useCallback(
+    (date: string, todoId: string) => {
+      persist((prev) => {
+        const day = prev.leftoverDays.find((item) => item.date === date);
+        const todo = day?.todos.find((item) => item.id === todoId);
+        if (!todo) return prev;
+
+        return {
+          ...prev,
+          todayTodos: [{ ...todo, completed: false }, ...prev.todayTodos],
+          leftoverDays: mapLeftoverDay(prev.leftoverDays, date, (todos) =>
+            todos.filter((item) => item.id !== todoId),
+          ),
+        };
+      });
     },
     [persist],
   );
@@ -405,11 +506,16 @@ export function useListsStore(userId: string) {
     updateSectionTitle,
     addTodo,
     toggleTodo,
+    updateTodo,
     deleteTodo,
     addTodayTodo,
+    addScheduledTodo,
     toggleTodayTodo,
+    updateTodayTodo,
     deleteTodayTodo,
     toggleLeftoverTodo,
+    updateLeftoverTodo,
+    moveLeftoverTodoToToday,
     deleteLeftoverTodo,
     addTab,
     deleteTab,

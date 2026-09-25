@@ -10,21 +10,34 @@ type Props = {
   done: number;
   total: number;
   onSettings: () => void;
+  onCalendar?: () => void;
 };
 
-export function ScreenHeader({ kicker, title, done, total, onSettings }: Props) {
+export function ScreenHeader({ kicker, title, done, total, onSettings, onCalendar }: Props) {
   return (
     <View style={styles.header}>
       <View style={styles.topRow}>
         <Text style={styles.date}>{kicker}</Text>
-        <Pressable
-          onPress={onSettings}
-          style={styles.settingsBtn}
-          accessibilityRole="button"
-          accessibilityLabel="Paramètres"
-        >
-          <Ionicons name="settings-outline" size={20} color={colors.inkMuted} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          {onCalendar ? (
+            <Pressable
+              onPress={onCalendar}
+              style={[styles.settingsBtn, styles.calendarBtn]}
+              accessibilityRole="button"
+              accessibilityLabel="Planifier une tâche"
+            >
+              <Ionicons name="calendar" size={22} color={colors.now} />
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={onSettings}
+            style={styles.settingsBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Paramètres"
+          >
+            <Ionicons name="settings-outline" size={20} color={colors.inkMuted} />
+          </Pressable>
+        </View>
       </View>
       <View style={styles.titleRow}>
         <Text style={styles.tabName}>{title}</Text>
@@ -63,6 +76,15 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  calendarBtn: {
+    backgroundColor: 'rgba(255, 122, 92, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 122, 92, 0.5)',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: 4,
   },
   titleRow: {
     flexDirection: 'row',

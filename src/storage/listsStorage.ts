@@ -89,6 +89,7 @@ export function createDefaultData(): AppData {
     lastRolloverDate: localDateKey(),
     todayTodos: [],
     leftoverDays: [],
+    scheduledDays: [],
     tabs: defaults.map((tab, tabIndex) => ({
       ...createTab({
         name: tab.name,
@@ -168,16 +169,25 @@ function mergeLeftoverDay(
 
 export function applyDailyRollover(data: AppData, now = new Date()): AppData {
   const today = localDateKey(now);
+  const scheduledForToday = data.scheduledDays.find((day) => day.date === today)?.todos ?? [];
+  const remainingScheduled = data.scheduledDays.filter((day) => day.date !== today);
+
   if (data.lastRolloverDate === today) {
-    return data;
+    if (scheduledForToday.length === 0) return data;
+    return {
+      ...data,
+      todayTodos: [...scheduledForToday, ...data.todayTodos],
+      scheduledDays: remainingScheduled,
+    };
   }
 
   const unfinished = data.todayTodos.filter((todo) => !todo.completed);
   return {
     ...data,
     lastRolloverDate: today,
-    todayTodos: [],
+    todayTodos: scheduledForToday,
     leftoverDays: mergeLeftoverDay(data.leftoverDays, data.lastRolloverDate, unfinished),
+    scheduledDays: remainingScheduled,
   };
 }
 
@@ -209,6 +219,7 @@ export function parseAppData(parsed: unknown): AppData | null {
     lastRolloverDate,
     todayTodos: normalizeTodos(raw.todayTodos),
     leftoverDays: normalizeLeftover(raw.leftoverDays),
+    scheduledDays: normalizeLeftover(raw.scheduledDays),
     tabs,
   });
 }

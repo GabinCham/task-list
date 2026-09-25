@@ -43,6 +43,7 @@ export type AppData = {
   lastRolloverDate: string;
   todayTodos: Todo[];
   leftoverDays: LeftoverDay[];
+  scheduledDays: LeftoverDay[];
   tabs: TabList[];
 };
 

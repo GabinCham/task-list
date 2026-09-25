@@ -1,4 +1,5 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { colors } from '../theme/colors';
 import { fonts } from '../theme/fonts';
 import type { Todo } from '../types';
@@ -8,6 +9,8 @@ type Props = {
   accent: string;
   isFirst: boolean;
   onToggle: () => void;
+  onEdit?: (text: string) => void;
+  onMoveToToday?: () => void;
   onDelete: () => void;
 };
 
@@ -16,8 +19,24 @@ export function TodoItem({
   accent,
   isFirst,
   onToggle,
+  onEdit,
+  onMoveToToday,
   onDelete,
 }: Props) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(todo.text);
+
+  useEffect(() => {
+    setDraft(todo.text);
+  }, [todo.text]);
+
+  const commitEdit = () => {
+    const next = draft.trim() || todo.text;
+    setDraft(next);
+    onEdit?.(next);
+    setEditing(false);
+  };
+
   return (
     <View style={[styles.row, !isFirst && styles.divider]}>
       <Pressable
@@ -34,12 +53,39 @@ export function TodoItem({
       >
         {todo.completed ? <Text style={styles.checkMark}>✓</Text> : null}
       </Pressable>
-      <Text
-        style={[styles.text, todo.completed && styles.textDone]}
-        numberOfLines={3}
-      >
-        {todo.text}
-      </Text>
+      {editing ? (
+        <TextInput
+          value={draft}
+          onChangeText={setDraft}
+          onBlur={commitEdit}
+          onSubmitEditing={commitEdit}
+          autoFocus
+          selectTextOnFocus
+          returnKeyType="done"
+          style={[styles.text, styles.textInput, todo.completed && styles.textDone]}
+          accessibilityLabel="Modifier la tâche"
+        />
+      ) : (
+        <Pressable
+          onPress={() => onEdit && setEditing(true)}
+          style={styles.text}
+          disabled={!onEdit}
+          accessibilityHint={onEdit ? 'Appuyez pour modifier' : undefined}
+        >
+          <Text style={[styles.text, todo.completed && styles.textDone]} numberOfLines={3}>
+            {todo.text}
+          </Text>
+        </Pressable>
+      )}
+      {onMoveToToday ? (
+        <Pressable
+          onPress={onMoveToToday}
+          style={[styles.moveBtn, { borderColor: accent }]}
+          accessibilityLabel="Remettre dans Aujourd’hui"
+        >
+          <Text style={[styles.moveText, { color: accent }]}>Aujourd’hui</Text>
+        </Pressable>
+      ) : null}
       <Pressable
         onPress={onDelete}
         style={styles.deleteBtn}
@@ -92,6 +138,21 @@ const styles = StyleSheet.create({
   textDone: {
     color: 'rgba(244, 246, 251, 0.4)',
     textDecorationLine: 'line-through',
+  },
+  textInput: {
+    padding: 0,
+    minHeight: 22,
+  },
+  moveBtn: {
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    flexShrink: 0,
+  },
+  moveText: {
+    fontFamily: fonts.bodySemi,
+    fontSize: 11,
   },
   deleteBtn: {
     width: 32,

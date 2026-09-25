@@ -78,7 +78,9 @@ function AppNavigator() {
         </View>
       ) : null}
       <View style={styles.screen}>
-        {activeTabId ? <TabRoute tabId={activeTabId} /> : null}
+        {activeTabId ? (
+          <TabRoute tabId={activeTabId} onSelectTab={setSelectedTabId} />
+        ) : null}
       </View>
       <CustomTabBar
         tabs={navTabs}

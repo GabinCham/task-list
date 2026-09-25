@@ -11,6 +11,8 @@ import { SimpleListCard } from './SimpleListCard';
 type Props = {
   leftoverDays: LeftoverDay[];
   onToggleTodo: (date: string, todoId: string) => void;
+  onUpdateTodo: (date: string, todoId: string, text: string) => void;
+  onMoveTodoToToday: (date: string, todoId: string) => void;
   onDeleteTodo: (date: string, todoId: string) => void;
   onResetAll: () => void;
 };
@@ -18,6 +20,8 @@ type Props = {
 export function LeftoverScreen({
   leftoverDays,
   onToggleTodo,
+  onUpdateTodo,
+  onMoveTodoToToday,
   onDeleteTodo,
   onResetAll,
 }: Props) {
@@ -63,6 +67,8 @@ export function LeftoverScreen({
                 todos={day.todos}
                 emptyText="Rien pour ce jour."
                 onToggleTodo={(todoId) => onToggleTodo(day.date, todoId)}
+                onUpdateTodo={(todoId, text) => onUpdateTodo(day.date, todoId, text)}
+                onMoveTodoToToday={(todoId) => onMoveTodoToToday(day.date, todoId)}
                 onDeleteTodo={(todoId) => onDeleteTodo(day.date, todoId)}
               />
             </View>

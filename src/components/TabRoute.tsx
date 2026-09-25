@@ -9,9 +9,10 @@ import { TodayScreen } from './TodayScreen';
 
 type Props = {
   tabId: string;
+  onSelectTab: (tabId: string) => void;
 };
 
-export function TabRoute({ tabId }: Props) {
+export function TabRoute({ tabId, onSelectTab }: Props) {
   const store = useLists();
 
   if (tabId === TODAY_TAB_ID) {
@@ -20,7 +21,11 @@ export function TabRoute({ tabId }: Props) {
         todos={store.data?.todayTodos ?? []}
         onAddTodo={store.addTodayTodo}
         onToggleTodo={store.toggleTodayTodo}
+        onUpdateTodo={store.updateTodayTodo}
         onDeleteTodo={store.deleteTodayTodo}
+        onOpenLeftovers={() => onSelectTab(LEFTOVER_TAB_ID)}
+        onAddScheduledTodo={store.addScheduledTodo}
+        scheduledDays={store.data?.scheduledDays ?? []}
         onResetAll={store.resetAll}
       />
     );
@@ -31,6 +36,8 @@ export function TabRoute({ tabId }: Props) {
       <LeftoverScreen
         leftoverDays={store.data?.leftoverDays ?? []}
         onToggleTodo={store.toggleLeftoverTodo}
+        onUpdateTodo={store.updateLeftoverTodo}
+        onMoveTodoToToday={store.moveLeftoverTodoToToday}
         onDeleteTodo={store.deleteLeftoverTodo}
         onResetAll={store.resetAll}
       />
@@ -55,6 +62,9 @@ export function TabRoute({ tabId }: Props) {
       onAddTodo={(sectionId, text) => store.addTodo(tab.id, sectionId, text)}
       onToggleTodo={(sectionId, todoId) =>
         store.toggleTodo(tab.id, sectionId, todoId)
+      }
+      onUpdateTodo={(sectionId, todoId, text) =>
+        store.updateTodo(tab.id, sectionId, todoId, text)
       }
       onDeleteTodo={(sectionId, todoId) =>
         store.deleteTodo(tab.id, sectionId, todoId)

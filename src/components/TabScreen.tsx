@@ -18,6 +18,7 @@ type Props = {
   onUpdateSectionTitle: (sectionId: string, title: string) => void;
   onAddTodo: (sectionId: string, text: string) => void;
   onToggleTodo: (sectionId: string, todoId: string) => void;
+  onUpdateTodo: (sectionId: string, todoId: string, text: string) => void;
   onDeleteTodo: (sectionId: string, todoId: string) => void;
   onResetAll: () => void;
   onDeleteTab: () => void;
@@ -30,6 +31,7 @@ export function TabScreen({
   onUpdateSectionTitle,
   onAddTodo,
   onToggleTodo,
+  onUpdateTodo,
   onDeleteTodo,
   onResetAll,
   onDeleteTab,
@@ -68,6 +70,7 @@ export function TabScreen({
             onRename={(title) => onUpdateSectionTitle(section.id, title)}
             onAddTodo={(text) => onAddTodo(section.id, text)}
             onToggleTodo={(todoId) => onToggleTodo(section.id, todoId)}
+            onUpdateTodo={(todoId, text) => onUpdateTodo(section.id, todoId, text)}
             onDeleteTodo={(todoId) => onDeleteTodo(section.id, todoId)}
           />
         ))}
